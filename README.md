@@ -1,4 +1,5 @@
 # Idris
+![](./idris.png)
 Idris é uma linguagem de programação puramente funcional com tipos dependentes , avaliação lenta opcional e recursos como um verificador de totalidade . Idris pode ser usado como assistente de prova , mas foi projetado para ser uma linguagem de programação de uso geral semelhante ao Haskell .
 
 O sistema do tipo Idris é semelhante ao Agda , e as provas são semelhantes ao Coq , incluindo táticas . Comparado à Agda e à Coq, Idris prioriza o gerenciamento de efeitos colaterais e o suporte a idiomas específicos de domínio incorporados . Idris compila para C (confiando em um coletor de lixo de cópia personalizado usando o algoritmo de Cheney ) e JavaScript (tanto no navegador quanto no Node.js. ). Existem geradores de código de terceiros para outras plataformas, incluindo JVM , CIL e LLVM . 

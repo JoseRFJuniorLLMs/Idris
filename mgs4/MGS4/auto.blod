@@ -1,0 +1,27 @@
+import Stuff
+
+length : List a -> Nat
+length Nil = Z
+length (x :: xs) = S (length xs)
+
+append : List a -> List a -> List a
+append Nil         ys = ys
+append (x :: xs) ys = x :: append xs ys
+
+data Elem : a -> List a -> Type where
+     Here : Elem x (x :: xs)
+     There : Elem x xs -> Elem x (y :: xs)
+
+insertElem : Elem x (append outer inner) -> Elem x (append outer (n :: inner))
+insertElem {outer = []} p = There p
+insertElem {outer = x :: xs} Here = Here
+insertElem {outer = x :: xs} {inner} {n} (There prf)
+    = There (insertElem {n} {outer = xs} {inner} prf)
+
+pos : (xs : List a) -> Elem x xs -> a
+pos (x :: xs) Here = x
+pos (x :: xs) (There p) = pos xs p
+
+pos2 : (x : a) -> (xs : List a) -> {auto prf : Elem x xs} -> a
+pos2 x (_ :: xs) {prf = Here} = x
+pos2 y (x :: xs) {prf = There p} = pos2 y xs

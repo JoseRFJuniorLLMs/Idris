@@ -1,0 +1,82 @@
+data Nat : Type where
+     Z : Nat
+     S : Nat -> Nat
+
+plus : Nat -> Nat -> Nat
+plus Z     y = y
+plus (S k) y = S (plus k y)
+
+infixr 5 ::
+
+data Vect : Nat -> Type -> Type where
+     Nil  : Vect Z a
+     (::) : a -> Vect k a -> Vect (S k) a
+
+data Fin : Nat -> Type where
+     FZ : Fin (S k)
+     FS : Fin k -> Fin (S k)
+
+lookup : Fin k -> Vect k ty -> ty
+lookup FZ (t :: ts) = t
+lookup (FS i) (t :: ts) = lookup i ts
+
+-- As a larger example, we'll implement the well-typed interpreter.
+-- So we'll need to represent the types of our expression language:
+
+data Ty : Type where
+     Base : Type -> Ty
+     Arrow : Ty -> Ty -> Ty
+
+-- Ty can be translated to a host language type
+
+interpTy : Ty -> Type
+interpTy (Base t) = t
+interpTy (Arrow s t) = interpTy s -> interpTy t
+
+-- 'HasType i t gam' says that the variable at position i has type t
+-- in context gam:
+
+data HasType : Fin k -> Ty -> Vect k Ty -> Type where
+     Stop : HasType FZ t (t :: gam)
+     Pop  : HasType i t gam -> HasType (FS i) t (u :: gam)
+
+-- Expressions in our language, indexed by their contexts and types:
+
+data Lang : Vect k Ty -> Ty -> Type where
+     Var : HasType i t gam -> Lang gam t
+     Val : (x : interpTy a) -> Lang gam a
+     Lam : (scope : Lang (s :: gam) t) -> Lang gam (Arrow s t)
+     App : Lang gam (Arrow s t) -> Lang gam s -> Lang gam t
+     Op : (interpTy a -> interpTy b -> interpTy c) ->
+          Lang gam a -> Lang gam b -> Lang gam c
+
+-- To evaluate expressions, we'll need an environment to keep track of
+-- the value of each variable:
+
+namespace Env
+  public export
+  data Env : Vect n Ty -> Type where
+       Nil : Env Nil
+       (::) : (x : interpTy a) -> Env gam -> Env (a :: gam)
+
+-- Find a value in an environment
+lookupEnv : HasType i t gam -> Env gam -> interpTy t
+lookupEnv Stop (x :: xs) = x
+lookupEnv (Pop var) (x :: xs) = lookupEnv var xs
+
+-- Finally, interpret Lang expressions as host language expressions.
+
+interp : Env gam -> Lang gam t -> interpTy t
+interp env (Var i) = lookupEnv i env
+interp env (Val x) = x
+interp env (App f a) = interp env f (interp env a)
+interp env (Lam scope) = \var => interp (var :: env) scope
+interp env (Op fn x y) = fn (interp env x) (interp env y)
+
+-- A couple of tests:
+
+testId : Lang [] (Arrow (Base Nat) (Base Nat))
+testId = Lam (Var Stop)
+
+testAdd : Lang gam (Arrow (Base Nat) (Arrow (Base Nat) (Base Nat)))
+testAdd = Lam (Lam (Op plus (Var (Pop Stop)) (Var Stop)))
